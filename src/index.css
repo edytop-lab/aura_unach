@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.825rem;
+}
+
+.prose th {
+  border: 1px solid #cbd5e1;
+  background-color: #f1f5f9;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.prose td {
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.75rem;
+}
+
+.prose tr:nth-child(even) {
+  background-color: #f8fafc;
+}
