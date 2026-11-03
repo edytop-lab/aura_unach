@@ -57,26 +57,44 @@ Estoy aquí para brindarte claridad, tranquilidad y orientación exacta respecto
     setLoading(true);
 
     try {
-      // Build conversation history to send to server-side Gemini endpoint
-      const history = messages
+      // Build conversation history for Google Gemini API format
+      const contents = messages
         .filter((m) => m.id !== 'welcome')
-        .map((m) => ({ role: m.role, text: m.text }));
+        .map((m) => ({
+          role: m.role === 'model' ? 'model' : 'user',
+          parts: [{ text: m.text }],
+        }));
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, history }),
+      // Add current user query
+      contents.push({
+        role: 'user',
+        parts: [{ text: query }],
       });
 
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents }),
+        }
+      );
+
       if (!response.ok) {
-        throw new Error(`Error en servidor: ${response.status}`);
+        throw new Error(`Error en API de Gemini: ${response.status}`);
       }
 
       const data = await response.json();
+      const replyText =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        'Lo siento, no se pudo obtener una respuesta en este momento.';
+
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
         role: 'model',
-        text: data.reply || 'Lo siento, no se pudo obtener una respuesta en este momento.',
+        text: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -263,6 +281,7 @@ Estoy aquí para brindarte claridad, tranquilidad y orientación exacta respecto
             <AlertCircle className="w-3.5 h-3.5 text-blue-900" />
             <span>Respuestas basadas exclusivamente en normativa oficial. Nunca inventa información.</span>
           </span>
+
           <span className="hidden sm:inline">Soporte: eppalacios@unach.edu.ec</span>
         </div>
       </div>
