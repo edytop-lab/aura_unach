@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Send, Bot, User, Copy, Check, Sparkles, AlertCircle, HelpCircle, Shield, ArrowRight } from 'lucide-react';
+import { Send, Bot, User, Copy, Check, Sparkles, AlertCircle, Shield } from 'lucide-react';
 import { PREGUNTAS_FRECUENTES } from '../data/unachKnowledgeBase.ts';
 
 interface Message {
@@ -18,7 +18,7 @@ export const ChatAssistant: React.FC = () => {
       role: 'model',
       text: `¡Hola! Te doy una cordial bienvenida a **AURA - Asistente Universitario Reglamento Académico de la UNACH**. 🎓
 
-Estoy aquí para brindarte claridad, tranquilidad y orientación exacta respecto a los reglamentos institucionales, manuales de gestión y tu proceso de titulación de grado. Todas mis respuestas están estrictamente fundamentadas en:
+Estoy aquí para brindarte claridad, tranquilidad y orientación exacta respecto a los reglamentos institucionales, manuales de gestión y tu proceso de titulación de grado. Todas мои respuestas están estrictamente fundamentadas en:
 - El **Reglamento de Titulación de las Carreras de Grado de la UNACH** (*Resolución No. 0304-CU-UNACH-SE-EXT-24-09-2025*).
 - El **Manual de Gestión de las Opciones de Titulación** (*Resolución No. 0028-CU-UNACH-SE-EXT-02-02-2026 / Código GD.01.04. P01. I01*).
 - Los **Procedimientos Oficiales del SGC** (Trabajo de Titulación GD.04.04. P02, Complexivo GD.04.04. P03 y Actualización GD.04.04. P01.I01).
@@ -52,35 +52,34 @@ Estoy aquí para brindarte claridad, tranquilidad y orientación exacta respecto
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     if (!messageText) setInput('');
     setLoading(true);
 
     try {
-      // Build conversation history for Google Gemini API format
-      const contents = messages
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("La clave VITE_GEMINI_API_KEY no está configurada.");
+      }
+
+      // Construir el historial limpio para la API de Gemini
+      const contents = updatedMessages
         .filter((m) => m.id !== 'welcome')
         .map((m) => ({
           role: m.role === 'model' ? 'model' : 'user',
           parts: [{ text: m.text }],
         }));
 
-      // Add current user query
-      contents.push({
-        role: 'user',
-        parts: [{ text: query }],
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents }),
+        }
+      );
 
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-const response = await fetch(
-  `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-  {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents }),
-  }
-);
       if (!response.ok) {
         throw new Error(`Error en API de Gemini: ${response.status}`);
       }
